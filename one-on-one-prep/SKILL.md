@@ -46,6 +46,7 @@ AskQuestion:
     - id: manager
       prompt: "Who is your manager? (for framing the notes)"
       options:
+        - "[Previous manager name from last saved 1:1 prep] (Recommended)"
         - "I'll type their name"
 ```
 
@@ -104,6 +105,8 @@ CallMcpTool:
 ```
 Glob: journal/*.md
 ```
+
+Filter the results to only include files whose ISO week falls within the reporting period. For example, if the period is "Last 7 days" and today is 2026-07-15 (week 29), only read `journal/2026-W29.md` and `journal/2026-W28.md` (current and previous week). Discard journal files from older weeks.
 
 If journal files exist for the period, read them and extract:
 - Debug entries with status "Resolved" → potential **wins**
@@ -238,3 +241,5 @@ The first time this skill is used, append these tips after the prep notes:
 - Keep the notes as **bullet points, not prose**. These are glance-during-the-meeting notes, not a formal document.
 - The **Blockers & Asks** section should always frame problems as actionable requests. Not "deployment is broken" but "Deployment is blocked by the DNS migration — could you check with the platform team on the timeline?"
 - If the user has been using the journal consistently, the reflection prompts will be much easier to answer since the data is already captured. Encourage journal use as a habit that pays off at 1:1 time.
+- **Manager name persistence:** After the first use, check for previous 1:1 prep files in `notes/one-on-one/` to infer the manager name. Present it as a `(Recommended)` default in Step 1 rather than asking fresh each time. If no previous files exist, fall back to asking.
+- **Journal format dependency:** This skill depends on the engineering journal's format contract (see `engineering-journal/SKILL.md` → "Journal Format Contract" section). If journal entry headings or status fields change, update the parsing logic in Step 2 accordingly.

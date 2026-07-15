@@ -109,12 +109,12 @@ Use the template matching the format.
 *What I've ruled out:*
 • [Thing checked that wasn't the cause]
 
-*Relevant code:*
+*Relevant code:* _(omit this section if the question is about process, infrastructure, or domain knowledge rather than code)_
 \`\`\`[language]
 [Minimal code snippet — only what's needed to understand the problem]
 \`\`\`
 
-*Environment:* [language version, framework, OS if relevant]
+*Environment:* [language version, framework, OS if relevant — omit if not applicable]
 
 Any pointers appreciated!
 ```
@@ -139,13 +139,13 @@ Any pointers appreciated!
 ### What I've ruled out
 - [Thing that isn't the cause and why]
 
-### Relevant code
+### Relevant code _(omit if not a code question)_
 
 \`\`\`[language]
 [Minimal snippet]
 \`\`\`
 
-### Environment
+### Environment _(omit if not applicable)_
 - [Language/framework version]
 - [OS if relevant]
 - [Any relevant config]
@@ -185,6 +185,7 @@ AskQuestion:
         - "Looks good, I'll send it (Recommended)"
         - "I want to adjust it"
         - "Switch to a different format"
+        - "Also log this as a debug entry (→ Engineering Journal)"
 ```
 
 ## Question Quality Checklist
@@ -196,13 +197,19 @@ Before finalising, verify the question passes these checks:
 | States the **goal**, not just the attempted approach | |
 | Includes a **concrete symptom** (error message, wrong output, unexpected behaviour) | |
 | Shows **what was tried** with results | |
-| Includes a **minimal code snippet** (not the whole file) | |
+| Includes a **minimal code snippet** if the question involves code (not the whole file) | |
 | Specifies **environment** where relevant | |
 | Is **self-contained** — a reader doesn't need to ask "what do you mean?" | |
 
 ## Important Notes
 
-- **Never include secrets, tokens, passwords, or API keys** in code snippets. Scan for these before including code. If found, replace with `[REDACTED]`.
+- **Never include secrets, tokens, passwords, or API keys** in code snippets. Before including any code, scan for these patterns and replace matches with `[REDACTED]`:
+  - Variable names containing: `secret`, `password`, `passwd`, `token`, `api_key`, `apikey`, `api_secret`, `credential`, `private_key`, `access_key`, `secret_key`
+  - String literals matching: `Bearer `, `Basic `, `sk-`, `pk-`, `ghp_`, `gho_`, `github_pat_`, `xoxb-`, `xoxp-`, `AKIA` (AWS key prefix)
+  - PEM blocks: `-----BEGIN`
+  - Connection strings: `://.*:.*@` (contains embedded credentials)
+  - Environment variable references: `.env` file contents, `process.env.SECRET_*`
+  - See `security/knowledge-secure-by-design` for broader guidance on handling sensitive data.
 - **Minimal snippets only.** A 5-line snippet gets read. A 50-line dump gets skipped. Trim to the smallest code that shows the problem.
 - **Error messages verbatim.** Don't paraphrase errors — copy them exactly, including stack traces (trimmed to the relevant frames).
 - **Don't answer the question.** This skill formats the question — it doesn't try to solve the problem. If you know the answer, tell the user directly instead of formatting a question.

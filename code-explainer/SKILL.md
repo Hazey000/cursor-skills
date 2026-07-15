@@ -62,16 +62,43 @@ Depending on the scope, gather:
 **For a single file:**
 - Read the target file
 - Read its imports to understand dependencies
-- `Shell: grep -rn "import.*from.*[filename]" --include="*.ts" --include="*.py" --include="*.js" --include="*.go" .` — find who imports this file
+- Detect the project's primary language from the manifest file (package.json → TypeScript/JavaScript, go.mod → Go, pyproject.toml/requirements.txt → Python, Cargo.toml → Rust, pom.xml/build.gradle → Java/Kotlin, Gemfile → Ruby). Then grep for imports using the appropriate extensions. **Always exclude** `node_modules`, `.git`, `vendor`, `dist`, and `build` directories via `--exclude-dir`:
+  - TypeScript/JavaScript: `Shell: grep -rn "import.*from.*[filename]" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build .`
+  - Python: `Shell: grep -rn "from.*[module].*import\|import.*[module]" --include="*.py" --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.venv .`
+  - Go: `Shell: grep -rn "\".*[package]\"" --include="*.go" --exclude-dir=.git --exclude-dir=vendor .`
+  - Rust: `Shell: grep -rn "use.*[module]\|mod.*[module]" --include="*.rs" --exclude-dir=.git --exclude-dir=target .`
+  - Java/Kotlin: `Shell: grep -rn "import.*[package]" --include="*.java" --include="*.kt" --exclude-dir=.git --exclude-dir=build --exclude-dir=target .`
+  - Ruby: `Shell: grep -rn "require.*[file]" --include="*.rb" --exclude-dir=.git --exclude-dir=vendor .`
+  - If unsure, use a broad search: `Shell: grep -rn "[filename]" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.py" --include="*.go" --include="*.rs" --include="*.java" --include="*.kt" --include="*.rb" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build .`
 - `Shell: git log --oneline -10 [file]` — recent activity and contributors
 - Check for a corresponding test file (e.g. `foo.test.ts`, `test_foo.py`)
 
 **For a directory or module:**
-- `Shell: find [dir] -type f -name "*.ts" -o -name "*.py" -o -name "*.js" -o -name "*.go" | head -30` — list source files
+- `Shell: find [dir] -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.js" -o -name "*.jsx" -o -name "*.go" \) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" -not -path "*/dist/*" | head -30` — list source files
 - Read key entry point files (index.ts, main.py, mod.go, etc.)
 - Read any README or documentation files in the directory
 
 **For the whole repo:**
+- **Monorepo detection:** Before proceeding, check for monorepo indicators:
+  - `workspaces` field in `package.json`
+  - `pnpm-workspace.yaml`
+  - `lerna.json`
+  - Multiple `go.mod` files: `Shell: find . -maxdepth 3 -name "go.mod" | head -10`
+  - Multiple `package.json` files in subdirectories: `Shell: find . -maxdepth 2 -name "package.json" -not -path "./node_modules/*" | head -10`
+
+  If a monorepo is detected, ask the user to scope:
+
+  ```
+  AskQuestion:
+    title: "Monorepo Detected"
+    questions:
+      - id: scope
+        prompt: "This looks like a monorepo with multiple projects. Which area should I focus on?"
+        options:
+          - "Give me the top-level overview first (Recommended)"
+          - "I'll specify a sub-project"
+  ```
+
 - Read the top-level README if it exists
 - `Shell: find . -maxdepth 2 -type f -name "*.md" | head -20` — find documentation
 - `Shell: find . -maxdepth 1 -type d | sort` — top-level directory structure
@@ -245,6 +272,8 @@ AskQuestion:
         - "Trace a specific request path"
         - "Explain the test suite"
         - "Show me how I'd make a change here"
+        - "Log what I learned (→ Engineering Journal)"
+        - "I have a question about this (→ Question Formatter)"
 ```
 
 ## Important Notes
