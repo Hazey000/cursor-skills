@@ -42,6 +42,7 @@ AskQuestion:
         - "Debug session — I'm stuck on something or just solved something"
         - "Learning — I figured out something worth remembering"
         - "End-of-day reflection (Recommended)"
+        - "Update an existing debug entry — resolve an open investigation"
 ```
 
 Then follow the appropriate path below.
@@ -49,6 +50,20 @@ Then follow the appropriate path below.
 ---
 
 ### Path A: Debug Entry
+
+#### A0: Check for Open Investigations
+
+Before creating a new debug entry, check for existing unresolved entries:
+
+```
+Shell: grep -l "\\*\\*Status:\\*\\* Investigating" journal/*.md 2>/dev/null
+```
+
+If open entries are found, alert the user:
+
+> You have [N] open debug entry/entries still marked as "Investigating". Want to update one of those instead, or start a new entry?
+
+If the user wants to update, follow Path D. Otherwise continue to A1.
 
 #### A1: Gather Context
 
@@ -209,6 +224,8 @@ Use this template:
 ```markdown
 ## Reflection: [YYYY-MM-DD]
 
+**Date:** [YYYY-MM-DD]
+
 ### What I worked on
 [Summary from git log — list the main things, not every commit]
 
@@ -270,6 +287,88 @@ AskQuestion:
         - "Create a JIRA ticket for follow-up work"
 ```
 
+---
+
+### Path D: Update Existing Debug Entry
+
+#### D1: Find Open Entries
+
+Search for unresolved debug entries:
+
+```
+Shell: grep -n "\\*\\*Status:\\*\\* Investigating" journal/*.md
+```
+
+Present the list of open entries with their titles and dates.
+
+If no open entries are found, inform the user:
+
+> No open debug entries found. All previous debug sessions are resolved.
+
+#### D2: Select Entry to Update
+
+```
+AskQuestion:
+  title: "Update Debug Entry"
+  questions:
+    - id: entry
+      prompt: "Which entry do you want to update?"
+      options:
+        - "[Most recent investigating entry title] (Recommended)"
+        - "I'll specify which one"
+    - id: resolution
+      prompt: "What happened?"
+      options:
+        - "Found the root cause and fixed it"
+        - "Found the root cause, fix is pending"
+        - "Giving up / no longer relevant"
+```
+
+#### D3: Update the Entry
+
+Use `Edit` to update the existing entry in the weekly journal file:
+
+1. Change `**Status:** Investigating` → `**Status:** Resolved`
+2. Fill in the `### Root cause` section with the user's description
+3. Fill in the `### Fix` section with the actual fix
+4. Fill in the `### Lesson` section — prompt the user if not obvious from conversation
+
+Report the update:
+
+> Updated debug entry in `journal/2026-W28.md` — "Debug: Redis connection timeout" → Resolved
+
+Then offer follow-ups (same as Step 4):
+
+```
+AskQuestion:
+  title: "What's next?"
+  questions:
+    - id: next
+      prompt: "Entry updated. Anything else?"
+      options:
+        - "Done for now (Recommended)"
+        - "Log what I learned from this (→ Learning entry)"
+        - "Turn this into a question for my team (→ Question Formatter)"
+        - "Create a JIRA ticket for follow-up work (→ JIRA Tickets)"
+```
+
+---
+
+## Journal Format Contract
+
+Other skills in this repo depend on the journal's structure. If you change these, update the consuming skills.
+
+**Consuming skills:** `one-on-one-prep`
+
+| Element | Format | Used by |
+|---------|--------|---------|
+| Entry type heading | `## Debug:`, `## Learned:`, `## Reflection:` | one-on-one-prep (categorisation) |
+| Status field | `**Status:** Resolved` or `**Status:** Investigating` | one-on-one-prep (wins vs blockers) |
+| Date field | `**Date:** YYYY-MM-DD` | one-on-one-prep (period filtering) |
+| Lesson field | `### Lesson` | one-on-one-prep (growth section) |
+| Insight field | `### Insight` | one-on-one-prep (growth section) |
+| File naming | `journal/YYYY-WNN.md` | one-on-one-prep (glob pattern) |
+
 ## Reading Previous Entries
 
 When the user asks to review their journal:
@@ -281,7 +380,8 @@ When the user asks to review their journal:
 
 ## Important Notes
 
-- Journal files live in `journal/` at the project root. Create the directory if it doesn't exist.
+- Journal files live in `journal/` at the project root by default. Create the directory if it doesn't exist.
+- **Multi-repo setups:** If the user works across multiple repositories, suggest using a single shared journal location (e.g. `~/engineering-journal/`) instead of per-project journals. This avoids fragmenting entries across repos and ensures 1:1 prep can pull from all work. Offer this as a configuration option in Step 2 when the user first creates an entry.
 - File naming uses ISO 8601 week dates: `YYYY-WNN.md` (e.g. `2026-W28.md`).
 - Always **append** to existing weekly files, never overwrite.
 - Date format within entries is ISO 8601 (`YYYY-MM-DD`).
